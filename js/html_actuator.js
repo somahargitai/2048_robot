@@ -6,6 +6,10 @@ function HTMLActuator() {
   this.sharingContainer = document.querySelector(".score-sharing");
 
   this.score = 0;
+
+  this.sequence = new Array(2,4,8,16,32,64,128,256,512,1024,2048);
+  this.mergeFunction = function(tile, next) { return tile.value + next.value };
+  this.canMerge = function(tile, next) { return next.value === tile.value };
 }
 
 HTMLActuator.prototype.actuate = function (grid, metadata) {
@@ -60,9 +64,9 @@ HTMLActuator.prototype.addTile = function (tile) {
   var positionClass = this.positionClass(position);
 
   // We can't use classlist because it somehow glitches when replacing classes
-  var classes = ["tile", "tile-" + tile.value, positionClass];
+  var classes = ["tile", "tile-" + this.sequence.indexOf(tile.value), positionClass];
 
-  if (tile.value > 2048) classes.push("tile-super");
+  if (this.sequence.indexOf(tile.value) === -1) classes.push("tile-super");
 
   this.applyClasses(wrapper, classes);
 
