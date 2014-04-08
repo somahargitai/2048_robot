@@ -10,6 +10,7 @@ function GameManager(size, InputManager, Actuator, StorageManager) {
   this.inputManager.on("restart", this.restart.bind(this));
   this.inputManager.on("keepPlaying", this.keepPlaying.bind(this));
 
+
   this.setup();
 }
 
@@ -170,8 +171,8 @@ GameManager.prototype.move = function (direction) {
           // Update the score
           self.score += merged.value;
 
-          // The mighty MAXOFSEQUENCE tile
-          if (self.actuator.sequence.indexOf(merged.value) === -1) self.won = true;
+          // The mighty sequenceMax tile
+          if (merged.value == self.actuator.sequenceMax ) self.won = true;
         } else {
           self.moveTile(tile, positions.farthest);
         }
@@ -260,7 +261,7 @@ GameManager.prototype.tileMatchesAvailable = function () {
 
           var other  = self.grid.cellContent(cell);
 
-          if (other && other.value === tile.value) {
+          if (other && self.actuator.canMerge(tile,other)) {
             return true; // These two tiles can be merged
           }
         }

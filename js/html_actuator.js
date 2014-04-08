@@ -7,9 +7,18 @@ function HTMLActuator() {
 
   this.score = 0;
 
-  this.sequence = new Array(2,4,8,16,32,64,128,256,512,1024,2048);
+  // powers of 2
+  // this.sequence = new Array(2,4,8,16,32,64,128,256,512,1024,2048);
+  // this.mergeFunction = function(tile, next) { return tile.value + next.value };
+  // this.canMerge = function(tile, next) { return next.value === tile.value };
+
+  // fibonacci
+  this.sequence = new Array(1,2,3,5,8,13,21,34,55,89,144,233,377,610,987,1597,2584);
   this.mergeFunction = function(tile, next) { return tile.value + next.value };
-  this.canMerge = function(tile, next) { return next.value === tile.value };
+  this.canMerge = function(tile, next) { 
+    return (tile.value === 1 && next.value === 1) ||
+      this.sequence.indexOf(next.value) - this.sequence.indexOf(tile.value) === 1 
+  };
 }
 
 HTMLActuator.prototype.actuate = function (grid, metadata) {
@@ -26,6 +35,7 @@ HTMLActuator.prototype.actuate = function (grid, metadata) {
       });
     });
 
+    self.updateGameName(self.sequenceMax());
     self.updateScore(metadata.score);
     self.updateBestScore(metadata.bestScore);
 
@@ -64,7 +74,7 @@ HTMLActuator.prototype.addTile = function (tile) {
   var positionClass = this.positionClass(position);
 
   // We can't use classlist because it somehow glitches when replacing classes
-  var classes = ["tile", "tile-" + this.sequence.indexOf(tile.value), positionClass];
+  var classes = ["tile", "tile-" + Math.floor(10*this.sequence.indexOf(tile.value)/this.sequence.length), positionClass];
 
   if (this.sequence.indexOf(tile.value) === -1) classes.push("tile-super");
 
@@ -110,6 +120,19 @@ HTMLActuator.prototype.normalizePosition = function (position) {
 HTMLActuator.prototype.positionClass = function (position) {
   position = this.normalizePosition(position);
   return "tile-position-" + position.x + "-" + position.y;
+};
+
+HTMLActuator.prototype.sequenceMax = function () {
+  return this.sequence[this.sequence.length-1];
+};
+
+HTMLActuator.prototype.updateGameName = function (gameName) {
+  nameContainer = document.querySelector("title");
+  nameContainer.textContent = gameName;
+  nameContainer = document.querySelector(".title");
+  nameContainer.textContent = gameName;
+  nameContainer = document.querySelector(".game-intro");
+  nameContainer.textContent = ["Join the tiles in sequence for the " + gameName + " tile."];
 };
 
 HTMLActuator.prototype.updateScore = function (score) {
