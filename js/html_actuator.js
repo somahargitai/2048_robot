@@ -139,7 +139,7 @@ HTMLActuator.prototype.generateSequence = function (start,threshold) {
   while (this.sequenceMax() < threshold) {
     this.sequence.push(this.mergeValues(this.sequence[this.sequence.length-2],this.sequenceMax()));
   }
-  this.sequenceContainer.textContent = this.sequence;
+  this.sequenceContainer.textContent = this.sequence.join(", ");
 };
 
 HTMLActuator.prototype.updateGameName = function (gameName) {

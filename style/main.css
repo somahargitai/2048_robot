@@ -555,7 +555,27 @@ hr {
   line-height: 42px;
   margin-bottom: 0; }
 
+.sequence-container {
+  width: 70%;
+  float: left;
+  line-height: 23px;
+  margin-bottom: 0; }
+
 .restart-button {
+  display: inline-block;
+  background: #82668F;
+  border-radius: 3px;
+  padding: 0 20px;
+  text-decoration: none;
+  color: #f9f6f2;
+  height: 40px;
+  line-height: 42px;
+  cursor: pointer;
+  display: block;
+  text-align: center;
+  float: right; }
+
+.resequence-button {
   display: inline-block;
   background: #82668F;
   border-radius: 3px;
@@ -609,8 +629,21 @@ hr {
     box-sizing: border-box;
     line-height: 1.65; }
 
+  .sequence-container {
+    width: 50%;
+    display: block;
+    box-sizing: border-box;
+    line-height: 1.05; }
+
   .restart-button {
     width: 42%;
+    padding: 0;
+    display: block;
+    box-sizing: border-box;
+    margin-top: 2px; }
+
+  .resequence-button {
+    width: 45%;
     padding: 0;
     display: block;
     box-sizing: border-box;
