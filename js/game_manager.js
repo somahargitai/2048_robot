@@ -73,7 +73,7 @@ GameManager.prototype.addStartTiles = function () {
 // Adds a tile in a random position
 GameManager.prototype.addRandomTile = function () {
   if (this.grid.cellsAvailable()) {
-    var value = Math.random() < 0.9 ? this.actuator.sequence[0] : this.actuator.sequence[1];
+    var value = Math.random() < 0.9 ? this.actuator.sequence[Math.round(Math.random())] : this.actuator.sequence[2];
     var tile = new Tile(this.grid.randomAvailableCell(), value);
 
     this.grid.insertTile(tile);
@@ -172,7 +172,11 @@ GameManager.prototype.move = function (direction) {
           self.score += merged.value;
 
           // The mighty sequenceMax tile
-          if (merged.value == self.actuator.sequenceMax ) self.won = true;
+          if (merged.value == self.actuator.sequenceMax() ) {
+            self.won = true;
+            // this should give players enough room to keep lpaying while following sequence rules:
+            self.actuator.generateSequence(self.actuator.sequenceStart,self.actuator.gameThreshold*3);
+          }
         } else {
           self.moveTile(tile, positions.farthest);
         }

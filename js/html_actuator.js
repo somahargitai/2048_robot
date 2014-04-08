@@ -1,24 +1,32 @@
 function HTMLActuator() {
-  this.tileContainer    = document.querySelector(".tile-container");
-  this.scoreContainer   = document.querySelector(".score-container");
-  this.bestContainer    = document.querySelector(".best-container");
-  this.messageContainer = document.querySelector(".game-message");
-  this.sharingContainer = document.querySelector(".score-sharing");
+  this.tileContainer     = document.querySelector(".tile-container");
+  this.scoreContainer    = document.querySelector(".score-container");
+  this.bestContainer     = document.querySelector(".best-container");
+  this.messageContainer  = document.querySelector(".game-message");
+  this.sharingContainer  = document.querySelector(".score-sharing");
+  this.sequenceContainer = document.querySelector(".sequence-container");
 
   this.score = 0;
 
+  this.gameThreshold = 2000;
+
   // powers of 2
-  // this.sequence = new Array(2,4,8,16,32,64,128,256,512,1024,2048);
-  // this.mergeFunction = function(tile, next) { return tile.value + next.value };
+  // this.sequenceStart = new Array(2,2);
+  // this.mergeValues = function(tileValue, nextValue) { return 2 * tileValue };
   // this.canMerge = function(tile, next) { return next.value === tile.value };
 
   // fibonacci
-  this.sequence = new Array(1,2,3,5,8,13,21,34,55,89,144,233,377,610,987,1597,2584);
-  this.mergeFunction = function(tile, next) { return tile.value + next.value };
-  this.canMerge = function(tile, next) { 
-    return (tile.value === 1 && next.value === 1) ||
-      this.sequence.indexOf(next.value) - this.sequence.indexOf(tile.value) === 1 
-  };
+  this.sequenceStart = new Array(1,1);
+  this.mergeValues = function(tileValue, nextValue) { return tileValue + nextValue };
+  this.canMerge = function(tile, next) {
+    return Math.abs(this.sequence.lastIndexOf(next.value) - this.sequence.indexOf(tile.value)) === 1 || 
+    Math.abs(this.sequence.indexOf(next.value) - this.sequence.lastIndexOf(tile.value)) === 1 };
+
+  // sequence generation
+  this.generateSequence(this.sequenceStart,this.gameThreshold);
+
+  // tile wrapper of the mergeValues function
+  this.mergeFunction = function(tile, next) { return this.mergeValues(tile.value,next.value) };
 }
 
 HTMLActuator.prototype.actuate = function (grid, metadata) {
@@ -124,6 +132,14 @@ HTMLActuator.prototype.positionClass = function (position) {
 
 HTMLActuator.prototype.sequenceMax = function () {
   return this.sequence[this.sequence.length-1];
+};
+
+HTMLActuator.prototype.generateSequence = function (start,threshold) {
+  this.sequence = start;
+  while (this.sequenceMax() < threshold) {
+    this.sequence.push(this.mergeValues(this.sequence[this.sequence.length-2],this.sequenceMax()));
+  }
+  this.sequenceContainer.textContent = this.sequence;
 };
 
 HTMLActuator.prototype.updateGameName = function (gameName) {
