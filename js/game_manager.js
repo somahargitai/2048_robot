@@ -5,6 +5,8 @@ function GameManager(size, InputManager, Actuator, StorageManager) {
   this.actuator       = new Actuator;
 
   this.startTiles     = 2;
+  this.gameThreshold  = 2000;
+  this.sequence       = new Array(1,1);
 
   this.inputManager.on("move", this.move.bind(this));
   this.inputManager.on("restart", this.restart.bind(this));
@@ -25,6 +27,8 @@ GameManager.prototype.restart = function () {
 // Keep playing after winning (allows going over SEQUENCEMAX)
 GameManager.prototype.keepPlaying = function () {
   this.keepPlaying = true;
+  this.gameThreshold = this.gameThreshold * 3;
+  this.generateSequence(); // resequences the games
   this.actuator.continueGame(); // Clear the game won/lost message
 };
 
@@ -32,7 +36,8 @@ GameManager.prototype.keepPlaying = function () {
 GameManager.prototype.resequence = function () {
   this.keepPlaying = true;
   this.actuator.continueGame(); // Clear the game won/lost message
-  this.setup();
+  this.generateSequence(); // resequences the games
+  this.actuate();
 };
 
 // Return true if the game is lost, or has won and the user hasn't kept playing
@@ -56,12 +61,16 @@ GameManager.prototype.setup = function () {
     this.over        = previousState.over;
     this.won         = previousState.won;
     this.keepPlaying = previousState.keepPlaying;
+    this.sequence    = previousState.sequence;
   } else {
     this.grid        = new Grid(this.size);
     this.score       = 0;
     this.over        = false;
     this.won         = false;
     this.keepPlaying = false;
+
+    // make the game sequence
+    this.generateSequence();
 
     // Add the initial tiles
     this.addStartTiles();
@@ -81,7 +90,7 @@ GameManager.prototype.addStartTiles = function () {
 // Adds a tile in a random position
 GameManager.prototype.addRandomTile = function () {
   if (this.grid.cellsAvailable()) {
-    var value = Math.random() < 0.9 ? this.actuator.sequence[Math.round(Math.random())] : this.actuator.sequence[2];
+    var value = Math.random() < 0.9 ? this.sequence[Math.round(Math.random())] : this.sequence[2];
     var tile = new Tile(this.grid.randomAvailableCell(), value);
 
     this.grid.insertTile(tile);
@@ -101,12 +110,15 @@ GameManager.prototype.actuate = function () {
     this.storageManager.setGameState(this.serialize());
   }
 
+  console.log(this.serialize());
+
   this.actuator.actuate(this.grid, {
     score:      this.score,
     over:       this.over,
     won:        this.won,
     bestScore:  this.storageManager.getBestScore(),
-    terminated: this.isGameTerminated()
+    terminated: this.isGameTerminated(),
+    sequence:   this.sequence
   });
 
 };
@@ -118,7 +130,8 @@ GameManager.prototype.serialize = function () {
     score:       this.score,
     over:        this.over,
     won:         this.won,
-    keepPlaying: this.keepPlaying
+    keepPlaying: this.keepPlaying,
+    sequence:    this.sequence
   };
 };
 
@@ -166,8 +179,8 @@ GameManager.prototype.move = function (direction) {
         var next      = self.grid.cellContent(positions.next);
 
         // Only one merger per row traversal?
-        if (next && self.actuator.canMerge(tile,next) && !next.mergedFrom) {
-          var merged = new Tile( positions.next, self.actuator.mergeFunction(tile,next) );
+        if (next && self.canMerge(tile,next) && !next.mergedFrom) {
+          var merged = new Tile( positions.next, self.mergeFunction(tile,next) );
           merged.mergedFrom = [tile, next];
 
           self.grid.insertTile(merged);
@@ -180,11 +193,7 @@ GameManager.prototype.move = function (direction) {
           self.score += merged.value;
 
           // The mighty sequenceMax tile
-          if (merged.value == self.actuator.sequenceMax() ) {
-            self.won = true;
-            // this should give players enough room to keep lpaying while following sequence rules:
-            self.actuator.generateSequence(self.actuator.sequenceStart,self.actuator.gameThreshold*3);
-          }
+          if ( merged.value == self.sequenceMax() ) { self.won = true; self.keepPlaying = false; }
         } else {
           self.moveTile(tile, positions.farthest);
         }
@@ -273,7 +282,7 @@ GameManager.prototype.tileMatchesAvailable = function () {
 
           var other  = self.grid.cellContent(cell);
 
-          if (other && self.actuator.canMerge(tile,other)) {
+          if (other && self.canMerge(tile,other)) {
             return true; // These two tiles can be merged
           }
         }
@@ -286,4 +295,27 @@ GameManager.prototype.tileMatchesAvailable = function () {
 
 GameManager.prototype.positionsEqual = function (first, second) {
   return first.x === second.x && first.y === second.y;
+};
+
+// fibonacci  / lucas sequences...
+GameManager.prototype.mergeValues = function(tileValue, nextValue) { return tileValue + nextValue }; 
+
+GameManager.prototype.canMerge = function(tile, next) {
+  return Math.abs(this.sequence.lastIndexOf(next.value) - this.sequence.indexOf(tile.value)) === 1 || 
+  Math.abs(this.sequence.indexOf(next.value) - this.sequence.lastIndexOf(tile.value)) === 1 };
+
+// tile wrapper of the mergeValues function
+GameManager.prototype.mergeFunction = function(tile, next) { return this.mergeValues(tile.value,next.value) };
+
+GameManager.prototype.sequenceMax = function () {
+  return this.sequence[this.sequence.length-1];
+};
+
+GameManager.prototype.generateSequence = function () {
+  while (this.sequenceMax() > this.gameThreshold) {
+    this.sequence.pop();
+  }
+  while (this.sequenceMax() < this.gameThreshold) {
+    this.sequence.push(this.mergeValues(this.sequence[this.sequence.length-2],this.sequenceMax()));
+  }
 };
