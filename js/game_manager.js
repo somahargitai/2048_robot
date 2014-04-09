@@ -35,8 +35,37 @@ GameManager.prototype.keepPlaying = function () {
 // Keep playing after winning (allows going over SEQUENCEMAX)
 GameManager.prototype.resequence = function () {
   this.keepPlaying = true;
-  this.actuator.continueGame(); // Clear the game won/lost message
+  var indexMap = new Array();
+  
+  self = this;
+  this.grid.cells.forEach(function (column) {
+    column.forEach(function (cell) {
+      if (cell) {
+        indexMap.push(self.sequence.indexOf(cell.value));
+        if (cell.mergedFrom) {
+          indexMap.push(self.sequence.indexOf(cell.mergedFrom[0].value));
+          indexMap.push(self.sequence.indexOf(cell.mergedFrom[1].value));
+        }
+      }
+    });
+  });
+
+  this.sequence = new Array(Math.ceil(5*Math.random()),Math.ceil(5*Math.random()));
   this.generateSequence(); // resequences the games
+
+  self = this;
+  this.grid.cells.forEach(function (column) {
+    column.forEach(function (cell) {
+      if (cell) {
+        cell.value = self.sequence[indexMap.shift()];
+        if (cell.mergedFrom) {
+          cell.mergedFrom[0].value = self.sequence[indexMap.shift()];
+          cell.mergedFrom[1].value = self.sequence[indexMap.shift()];
+        }
+      }
+    });
+  });
+
   this.actuate();
 };
 
@@ -109,8 +138,6 @@ GameManager.prototype.actuate = function () {
   } else {
     this.storageManager.setGameState(this.serialize());
   }
-
-  console.log(this.serialize());
 
   this.actuator.actuate(this.grid, {
     score:      this.score,
