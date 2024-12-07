@@ -1,3 +1,5 @@
+const delay = 200;
+
 function GameManager(size, InputManager, Actuator, StorageManager) {
   this.size           = size; // Size of the grid
   this.inputManager   = new InputManager;
@@ -369,6 +371,6 @@ GameManager.prototype.autoSolve = function () {
         this.autoSolveInterval = null;
         document.querySelector(".auto-solve-button").textContent = "Auto Solve";
       }
-    }, 50);
+    }, delay);
   }
 };
