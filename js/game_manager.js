@@ -375,25 +375,24 @@ GameManager.prototype.toggleStrategy = function () {
   } else if (
     this.strategy instanceof Custom_1 &&
     !(this.strategy instanceof Custom_2) &&
-    !(this.strategy instanceof Custom_3)
+    !(this.strategy instanceof Custom_3) &&
+    !(this.strategy instanceof Custom_4)
   ) {
     this.strategy = new Custom_2(this);
     document.querySelector(".strategy-button").textContent = "🤖: Custom_2";
     console.log("Custom_1 -> Custom_2");
-  } else if (
-    this.strategy instanceof Custom_2
-    
-  ) {
+  } else if (this.strategy instanceof Custom_2) {
     this.strategy = new Custom_3(this);
     document.querySelector(".strategy-button").textContent = "🤖: Custom_3";
     console.log("Custom_2 -> Custom_3");
-  } else if (
-    this.strategy instanceof Custom_3 
-  
-  ) {
+  } else if (this.strategy instanceof Custom_3) {
+    this.strategy = new MasterStrategy(this);
+    document.querySelector(".strategy-button").textContent = "🤖: Custom_4";
+    console.log("Custom_3 -> Custom_4");
+  } else if (this.strategy instanceof Custom_4) {
     this.strategy = new MasterStrategy(this);
     document.querySelector(".strategy-button").textContent = "🤖: Master";
-    console.log("Custom_3 -> Master");
+    console.log("Custom_4 -> Master");
   } else {
     this.strategy = new MasterStrategy(this);
     document.querySelector(".strategy-button").textContent = "🤖: Master";

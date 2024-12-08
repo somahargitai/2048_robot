@@ -999,3 +999,154 @@ class Custom_3 extends Custom_1 {
     return count;
   }
 }
+
+class Custom_4 extends Custom_1 {
+    constructor(grid) {
+        super(grid);
+        this.grid = grid;
+    }
+
+    getNextMove() {
+        const emptyFields = this.countEmptyFields(this.grid);
+        
+        if (emptyFields <= 9) {
+            // Look for chains and try to complete them
+            const chainMove = this.findChainCompletion();
+            if (chainMove) {
+                return chainMove;
+            }
+        }
+        
+        return super.getNextMove();
+    }
+
+    findChainCompletion() {
+        // Find all chains of length 3 or more
+        const chains = this.findAllChains();
+        
+        // Sort chains by length and highest value
+        chains.sort((a, b) => {
+            if (b.length === a.length) {
+                return b[0].value - a[0].value;
+            }
+            return b.length - a.length;
+        });
+
+        // Try to complete the best chain
+        for (const chain of chains) {
+            if (chain.length >= 3) {
+                const lowestValue = chain[chain.length - 1].value;
+                const move = this.findMoveToCompleteChain(chain, lowestValue);
+                if (move) {
+                    return move;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    findAllChains() {
+        const chains = [];
+        const visited = new Set();
+
+        // Start from each cell
+        for (let i = 0; i < this.grid.length; i++) {
+            for (let j = 0; j < this.grid[i].length; j++) {
+                if (this.grid[i][j] > 0 && !visited.has(`${i},${j}`)) {
+                    const chain = this.exploreChain(i, j, visited);
+                    if (chain.length >= 3) {
+                        chains.push(chain);
+                    }
+                }
+            }
+        }
+
+        return chains;
+    }
+
+    exploreChain(startRow, startCol, visited) {
+        const chain = [];
+        const queue = [{row: startRow, col: startCol, value: this.grid[startRow][startCol]}];
+        
+        while (queue.length > 0) {
+            const current = queue.shift();
+            const key = `${current.row},${current.col}`;
+            
+            if (visited.has(key)) continue;
+            
+            visited.add(key);
+            chain.push(current);
+
+            // Check adjacent cells (up, right, down, left)
+            const directions = [[-1,0], [0,1], [1,0], [0,-1]];
+            
+            for (const [dx, dy] of directions) {
+                const newRow = current.row + dx;
+                const newCol = current.col + dy;
+                
+                if (this.isValidPosition(newRow, newCol)) {
+                    const nextValue = this.grid[newRow][newCol];
+                    if (this.isChainableValue(current.value, nextValue)) {
+                        queue.push({
+                            row: newRow,
+                            col: newCol,
+                            value: nextValue
+                        });
+                    }
+                }
+            }
+        }
+
+        // Sort chain by value (highest to lowest)
+        chain.sort((a, b) => b.value - a.value);
+        return chain;
+    }
+
+    isChainableValue(value1, value2) {
+        return value2 > 0 && (value1 === value2 * 2 || value2 === value1 * 2);
+    }
+
+    findMoveToCompleteChain(chain, targetValue) {
+        // Look for a move that would create a match for the lowest value in the chain
+        const lowestCell = chain[chain.length - 1];
+        
+        // Check adjacent cells to the lowest value in chain
+        const directions = [[-1,0], [0,1], [1,0], [0,-1]];
+        
+        for (const [dx, dy] of directions) {
+            const newRow = lowestCell.row + dx;
+            const newCol = lowestCell.col + dy;
+            
+            if (this.isValidPosition(newRow, newCol) && this.grid[newRow][newCol] === 0) {
+                // Check if we can place matching value here
+                if (this.isValid(newRow, newCol, targetValue)) {
+                    return {
+                        x: newCol,
+                        y: newRow,
+                        value: targetValue
+                    };
+                }
+            }
+        }
+
+        return null;
+    }
+
+    isValidPosition(row, col) {
+        return row >= 0 && row < this.grid.length && 
+               col >= 0 && col < this.grid[0].length;
+    }
+
+    countEmptyFields(grid) {
+        let count = 0;
+        for (let i = 0; i < grid.length; i++) {
+            for (let j = 0; j < grid[i].length; j++) {
+                if (grid[i][j] === 0) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+}
