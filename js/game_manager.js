@@ -1,17 +1,18 @@
-const delay = 200;
+let delay = 200;
 
 function GameManager(size, InputManager, Actuator, StorageManager) {
-  this.size           = size; // Size of the grid
-  this.inputManager   = new InputManager;
-  this.storageManager = new StorageManager;
-  this.actuator       = new Actuator;
+  this.size = size; // Size of the grid
+  this.inputManager = new InputManager();
+  this.storageManager = new StorageManager();
+  this.actuator = new Actuator();
 
-  this.startTiles     = 2;
+  this.startTiles = 2;
 
   this.autoSolveInterval = null;
+  this.strategy = new SmartStrategy(this); // Default to smart strategy
+
   this.inputManager.on("autoSolve", this.autoSolve.bind(this));
-
-
+  this.inputManager.on("toggleStrategy", this.toggleStrategy.bind(this));
   this.inputManager.on("move", this.move.bind(this));
   this.inputManager.on("restart", this.restart.bind(this));
   this.inputManager.on("keepPlaying", this.keepPlaying.bind(this));
@@ -47,17 +48,16 @@ GameManager.prototype.setup = function () {
 
   // Reload the game from a previous game if present
   if (previousState) {
-    this.grid        = new Grid(previousState.grid.size,
-                                previousState.grid.cells); // Reload grid
-    this.score       = previousState.score;
-    this.over        = previousState.over;
-    this.won         = previousState.won;
+    this.grid = new Grid(previousState.grid.size, previousState.grid.cells); // Reload grid
+    this.score = previousState.score;
+    this.over = previousState.over;
+    this.won = previousState.won;
     this.keepPlaying = previousState.keepPlaying;
   } else {
-    this.grid        = new Grid(this.size);
-    this.score       = 0;
-    this.over        = false;
-    this.won         = false;
+    this.grid = new Grid(this.size);
+    this.score = 0;
+    this.over = false;
+    this.won = false;
     this.keepPlaying = false;
 
     // Add the initial tiles
@@ -99,23 +99,22 @@ GameManager.prototype.actuate = function () {
   }
 
   this.actuator.actuate(this.grid, {
-    score:      this.score,
-    over:       this.over,
-    won:        this.won,
-    bestScore:  this.storageManager.getBestScore(),
-    terminated: this.isGameTerminated()
+    score: this.score,
+    over: this.over,
+    won: this.won,
+    bestScore: this.storageManager.getBestScore(),
+    terminated: this.isGameTerminated(),
   });
-
 };
 
 // Represent the current game as an object
 GameManager.prototype.serialize = function () {
   return {
-    grid:        this.grid.serialize(),
-    score:       this.score,
-    over:        this.over,
-    won:         this.won,
-    keepPlaying: this.keepPlaying
+    grid: this.grid.serialize(),
+    score: this.score,
+    over: this.over,
+    won: this.won,
+    keepPlaying: this.keepPlaying,
   };
 };
 
@@ -145,9 +144,9 @@ GameManager.prototype.move = function (direction) {
 
   var cell, tile;
 
-  var vector     = this.getVector(direction);
+  var vector = this.getVector(direction);
   var traversals = this.buildTraversals(vector);
-  var moved      = false;
+  var moved = false;
 
   // Save the current tile positions and remove merger information
   this.prepareTiles();
@@ -160,7 +159,7 @@ GameManager.prototype.move = function (direction) {
 
       if (tile) {
         var positions = self.findFarthestPosition(cell, vector);
-        var next      = self.grid.cellContent(positions.next);
+        var next = self.grid.cellContent(positions.next);
 
         // Only one merger per row traversal?
         if (next && next.value === tile.value && !next.mergedFrom) {
@@ -204,10 +203,10 @@ GameManager.prototype.move = function (direction) {
 GameManager.prototype.getVector = function (direction) {
   // Vectors representing tile movement
   var map = {
-    0: { x: 0,  y: -1 }, // Up
-    1: { x: 1,  y: 0 },  // Right
-    2: { x: 0,  y: 1 },  // Down
-    3: { x: -1, y: 0 }   // Left
+    0: { x: 0, y: -1 }, // Up
+    1: { x: 1, y: 0 }, // Right
+    2: { x: 0, y: 1 }, // Down
+    3: { x: -1, y: 0 }, // Left
   };
 
   return map[direction];
@@ -235,13 +234,12 @@ GameManager.prototype.findFarthestPosition = function (cell, vector) {
   // Progress towards the vector direction until an obstacle is found
   do {
     previous = cell;
-    cell     = { x: previous.x + vector.x, y: previous.y + vector.y };
-  } while (this.grid.withinBounds(cell) &&
-           this.grid.cellAvailable(cell));
+    cell = { x: previous.x + vector.x, y: previous.y + vector.y };
+  } while (this.grid.withinBounds(cell) && this.grid.cellAvailable(cell));
 
   return {
     farthest: previous,
-    next: cell // Used to check if a merge is required
+    next: cell, // Used to check if a merge is required
   };
 };
 
@@ -262,9 +260,9 @@ GameManager.prototype.tileMatchesAvailable = function () {
       if (tile) {
         for (var direction = 0; direction < 4; direction++) {
           var vector = self.getVector(direction);
-          var cell   = { x: x + vector.x, y: y + vector.y };
+          var cell = { x: x + vector.x, y: y + vector.y };
 
-          var other  = self.grid.cellContent(cell);
+          var other = self.grid.cellContent(cell);
 
           if (other && other.value === tile.value) {
             return true; // These two tiles can be merged
@@ -281,7 +279,6 @@ GameManager.prototype.positionsEqual = function (first, second) {
   return first.x === second.x && first.y === second.y;
 };
 
-
 GameManager.prototype.getNextMove = function () {
   // Simple strategy: try all directions and pick the one that merges most tiles
   const directions = [0, 1, 2, 3]; // up, right, down, left
@@ -292,7 +289,7 @@ GameManager.prototype.getNextMove = function () {
     // Create a deep copy of the current grid
     const gridCopy = new Grid(this.size);
     gridCopy.cells = this.grid.serialize().cells;
-    
+
     // Try the move
     const moved = this.tryMove(direction, gridCopy);
     if (moved) {
@@ -303,13 +300,13 @@ GameManager.prototype.getNextMove = function () {
       }
     }
   }
-  
+
   return bestMove;
 };
 
 GameManager.prototype.evaluatePosition = function (grid) {
   let score = 0;
-  grid.eachCell(function(x, y, tile) {
+  grid.eachCell(function (x, y, tile) {
     if (tile) {
       score += tile.value;
     }
@@ -328,48 +325,97 @@ GameManager.prototype.tryMove = function (direction, grid) {
   var positions = this.prepareTiles(grid);
 
   // Traverse the grid in the right direction and move tiles
-  traversals.x.forEach(function (x) {
-    traversals.y.forEach(function (y) {
-      cell = { x: x, y: y };
-      tile = grid.cellContent(cell);
+  traversals.x.forEach(
+    function (x) {
+      traversals.y.forEach(
+        function (y) {
+          cell = { x: x, y: y };
+          tile = grid.cellContent(cell);
 
-      if (tile) {
-        var positions = this.findFarthestPosition(cell, vector, grid);
-        var next = grid.cellContent(positions.next);
+          if (tile) {
+            var positions = this.findFarthestPosition(cell, vector, grid);
+            var next = grid.cellContent(positions.next);
 
-        // Only one merger per row traversal?
-        if (next && next.value === tile.value && !next.mergedFrom) {
-          moved = true;
-          return true;
-        } else if (positions.farthest.x !== cell.x || positions.farthest.y !== cell.y) {
-          moved = true;
-          return true;
-        }
-      }
-    }.bind(this));
-  }.bind(this));
+            // Only one merger per row traversal?
+            if (next && next.value === tile.value && !next.mergedFrom) {
+              moved = true;
+              return true;
+            } else if (
+              positions.farthest.x !== cell.x ||
+              positions.farthest.y !== cell.y
+            ) {
+              moved = true;
+              return true;
+            }
+          }
+        }.bind(this)
+      );
+    }.bind(this)
+  );
 
   return moved;
 };
 
+GameManager.prototype.toggleStrategy = function () {
+  if (this.strategy instanceof MasterStrategy) {
+    this.strategy = new NaiveStrategy(this);
+    document.querySelector(".strategy-button").textContent = "🤖: Naive";
+  } else if (this.strategy instanceof NaiveStrategy) {
+    this.strategy = new SmartStrategy(this);
+    document.querySelector(".strategy-button").textContent = "🤖: Smart";
+    console.log("Naive -> Smart");
+  } else if (this.strategy instanceof SmartStrategy) {
+    this.strategy = new AdvancedStrategy(this);
+    document.querySelector(".strategy-button").textContent = "🤖: Advanced";
+    console.log("Smart -> Advanced");
+  } else if (this.strategy instanceof AdvancedStrategy) {
+    this.strategy = new Custom_1(this);
+    document.querySelector(".strategy-button").textContent = "🤖: Custom_1";
+    console.log("Advanced -> Custom_1");
+  } else if (
+    this.strategy instanceof Custom_1 &&
+    !(this.strategy instanceof Custom_2) &&
+    !(this.strategy instanceof Custom_3)
+  ) {
+    this.strategy = new Custom_2(this);
+    document.querySelector(".strategy-button").textContent = "🤖: Custom_2";
+    console.log("Custom_1 -> Custom_2");
+  } else if (
+    this.strategy instanceof Custom_2
+    
+  ) {
+    this.strategy = new Custom_3(this);
+    document.querySelector(".strategy-button").textContent = "🤖: Custom_3";
+    console.log("Custom_2 -> Custom_3");
+  } else if (
+    this.strategy instanceof Custom_3 
+  
+  ) {
+    this.strategy = new MasterStrategy(this);
+    document.querySelector(".strategy-button").textContent = "🤖: Master";
+    console.log("Custom_3 -> Master");
+  } else {
+    this.strategy = new MasterStrategy(this);
+    document.querySelector(".strategy-button").textContent = "🤖: Master";
+    console.log("Default -> Master");
+  }
+};
+
 GameManager.prototype.autoSolve = function () {
   if (this.autoSolveInterval) {
-    // Stop auto-solving
     clearInterval(this.autoSolveInterval);
     this.autoSolveInterval = null;
-    document.querySelector(".auto-solve-button").textContent = "Auto Solve";
+    document.querySelector(".auto-solve-button").textContent = "Solve";
   } else {
-    // Start auto-solving
-    document.querySelector(".auto-solve-button").textContent = "Stop Solving";
+    document.querySelector(".auto-solve-button").textContent = "Stop";
     this.autoSolveInterval = setInterval(() => {
       if (this.grid && !this.over) {
-        const nextMove = this.getNextMove();
-        const mapped = [0, 1, 2, 3]; // up, right, down, left
-        this.move(mapped[nextMove]);
+        const nextMove = this.strategy.getNextMove();
+        this.move(nextMove);
       } else {
         clearInterval(this.autoSolveInterval);
         this.autoSolveInterval = null;
-        document.querySelector(".auto-solve-button").textContent = "Auto Solve";
+        document.querySelector(".auto-solve-button").textContent = "Solve";
       }
     }, delay);
   }

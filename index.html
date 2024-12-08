@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>2049</title>
+  <title>2048 Bot</title>
 
   <link href="style/main.css" rel="stylesheet" type="text/css">
   <link rel="shortcut icon" href="favicon.ico">
@@ -19,22 +19,23 @@
 <body>
   <div class="container">
     <div class="heading">
-      <h1 class="title">2049</h1>
+      <h1 class="title">2048 Bot</h1>
       <!-- Add this below the heading-row div -->
-<div class="above-game">
-  <p class="game-intro">Join the numbers and get to the <strong>2048 tile!</strong></p>
-  <a class="restart-button">New Game</a>
-  <a class="auto-solve-button">Auto Solve</a>
-</div>
+
+      <div class="above-game">
+        <p class="game-intro">Join the numbers and get to the <strong>2048 tile!</strong></p>
+        <a class="restart-button">New Game</a>
+
+      </div>
+  
       <div class="scores-container">
         <div class="score-container">0</div>
         <div class="best-container">0</div>
       </div>
-    </div>
-
-    <div class="above-game">
-      <p class="game-intro">Join the numbers to the <strong>2049 tile.</strong>  You can't!</p>
-      <a class="restart-button">New Game</a>
+      <div class="controls-container">
+        <a class="auto-solve-button"> Solve </a>
+        <a class="strategy-button">Using: Smart</a>
+      </div>
     </div>
 
     <div class="game-container">
@@ -91,6 +92,7 @@
     </p>
   </div>
 
+  <script src="js/strategies.js"></script>
   <script src="js/bind_polyfill.js"></script>
   <script src="js/classlist_polyfill.js"></script>
   <script src="js/animframe_polyfill.js"></script>

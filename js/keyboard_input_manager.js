@@ -52,7 +52,9 @@ KeyboardInputManager.prototype.listen = function () {
   // Respond to auto-solve button clicks
   var autoSolveButton = document.querySelector(".auto-solve-button");
   autoSolveButton.addEventListener("click", this.autoSolve.bind(this));
-
+  
+  var strategyButton = document.querySelector(".strategy-button");
+  strategyButton.addEventListener("click", this.toggleStrategy.bind(this));
 
   // Respond to direction keys
   document.addEventListener("keydown", function (event) {
@@ -151,4 +153,9 @@ KeyboardInputManager.prototype.bindButtonPress = function (selector, fn) {
 KeyboardInputManager.prototype.autoSolve = function (event) {
   event.preventDefault();
   this.emit("autoSolve");
+};
+
+KeyboardInputManager.prototype.toggleStrategy = function (event) {
+  event.preventDefault();
+  this.emit("toggleStrategy");
 };
